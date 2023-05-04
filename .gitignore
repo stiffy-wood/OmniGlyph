@@ -1,0 +1,15 @@
+.vs
+Library
+Logs
+obj
+Packages
+ProjectSettings
+Temp
+UserSettings
+.vsconfig
+
+Assets/Scenes
+Assets/Settings
+Assets/TutorialInfo
+Assets/*.asset
+Assets/*meta
