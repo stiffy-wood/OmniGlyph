@@ -21,7 +21,7 @@ namespace OmniGlyph.Internals {
                     internalsToRemove.Add(@internal.Key);
                     continue;
                 }
-                @internal.Value.Update();
+                @internal.Value.InternalUpdate();
             }
             foreach (var @internal in internalsToRemove) {
                 _internals.TryRemove(@internal, out var _);
@@ -30,18 +30,32 @@ namespace OmniGlyph.Internals {
 
 
         public T Get<T>() where T : IInternal {
+            if (typeof(BaseMonoInternal).IsAssignableFrom(typeof(T))) {
+                throw new ArgumentException("Use GetMono<T> for MonoInternals");
+            }
             if (!_internals.TryGetValue(typeof(T), out IInternal @internal)) {
-                @internal = (T)Activator.CreateInstance(typeof(T));
-                @internal.InternalsManager = this;
+                @internal = InstantiateInternal<T>();
                 _internals.TryAdd(typeof(T), @internal);
             }
             return (T)@internal;
         }
-        public T GetNew<T>() where T : IInternal {
-            T @internal = (T)Activator.CreateInstance(typeof(T));
-            @internal.InternalsManager = this;
-            return @internal;
+        public T GetMono<T>() where T : BaseMonoInternal {
+            if (!_internals.TryGetValue(typeof(T), out IInternal @internal)) {
+                @internal = InstantiateMonoInternal<T>();
+                _internals.TryAdd(typeof(T), @internal);
+            }
+            return (T)@internal;
         }
 
+        private T InstantiateInternal<T>() where T : IInternal {
+            T @internal = (T)Activator.CreateInstance(typeof(T));
+            @internal.Init(this);
+            return @internal;
+        }
+        private T InstantiateMonoInternal<T>() where T : BaseMonoInternal {
+            T @internal = gameObject.AddComponent<T>();
+            @internal.Init(this);
+            return @internal;
+        }
     }
 }

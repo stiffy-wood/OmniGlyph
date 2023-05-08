@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using OmniGlyph.Configs;
+using OmniGlyph.Internals.Events;
 using UnityEngine;
 namespace OmniGlyph.Internals {
     public delegate void KeysPressed(Guid EventGuid, KeyCode[] keys);
@@ -12,42 +14,34 @@ namespace OmniGlyph.Internals {
                 return _isFinished;
             }
         }
-        public InternalsManager InternalsManager { get; set; }
-
-
-
+        private InternalsManager _manager;
 
         private InternalEventManager _internalEventManager;
 
-        private Queue<Action> newIncomingEventRequests = new Queue<Action>();
-        // TODO: Change implementation, so that it doesn't create a new event for each key press
-        // It will create an event to get all pressed keys
-        public void Update() {
-            if (_internalEventManager == null) {
-                _internalEventManager = InternalsManager?.Get<InternalEventManager>();
-            } else {
-                while (newIncomingEventRequests.Count > 0) {
-                    newIncomingEventRequests.Dequeue().Invoke();
-                }
-            }
+        public void Init(InternalsManager manager) {
+            _manager = manager;
+            _internalEventManager = _manager.Get<InternalEventManager>();
         }
-        public void StartListeningForKey(KeyCode key, Action action, Action<DynamicEvent> callBack = null, InputTypes inputType = InputTypes.KeyHeld) {
-            newIncomingEventRequests.Enqueue(() => {
-                DynamicEvent @event = _internalEventManager.RegisterEvent(new InputCondition(new KeyCode[] { key }, inputType), action);
-                callBack?.Invoke(@event);
-            });
+        public void InternalUpdate() {
+
+        }
+        public DynamicEvent StartListeningForKey(KeyCode key, Action action, InputTypes inputType = InputTypes.KeyHeld) {
+            return StartListeningForInput(new InputCondition(new KeyCode[] { key }, inputType), action);
         }
         public void StopListetingForKey(DynamicEvent @event) {
             StopListeningForCombo(@event);
         }
-        public void StartListeningForCombo(KeyCode[] keys, Action action, Action<DynamicEvent> callBack = null, InputTypes inputType = InputTypes.KeyHeld) {
-            newIncomingEventRequests.Enqueue(() => {
-                DynamicEvent @event = _internalEventManager.RegisterEvent(new InputCondition(keys, inputType), action);
-                callBack?.Invoke(@event);
-            });
+        public DynamicEvent StartListeningForCombo(KeyCode[] keys, Action action, InputTypes inputType = InputTypes.KeyHeld) {
+            return StartListeningForInput(new InputCondition(keys, inputType), action);
         }
         public void StopListeningForCombo(DynamicEvent @event) {
-            newIncomingEventRequests.Enqueue(() => _internalEventManager.UnRegisterEvent(@event));
+            StopListeningForInput(@event);
+        }
+        public DynamicEvent StartListeningForInput(ICondition condition, Action action) {
+            return _internalEventManager.RegisterEvent(condition, action);
+        }
+        public void StopListeningForInput(DynamicEvent @event) {
+            _internalEventManager.UnRegisterEvent(@event);
         }
 
 

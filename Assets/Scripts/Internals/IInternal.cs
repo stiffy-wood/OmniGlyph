@@ -5,7 +5,7 @@ using UnityEngine;
 namespace OmniGlyph.Internals {
     public interface IInternal {
         public bool IsFinished { get; }
-        public InternalsManager InternalsManager { get; set; }
-        public void Update();
+        public void InternalUpdate();
+        public void Init(InternalsManager manager);
     }
 }

@@ -4,8 +4,8 @@ using System.Linq;
 using UnityEngine;
 
 
-namespace OmniGlyph.Internals {
-    public class InputCondition : IICondition {
+namespace OmniGlyph.Internals.Events {
+    public record InputCondition : ICondition {
         public KeyCode[] keys;
         public InputTypes inputType;
         public InputCondition(KeyCode[] keys, InputTypes inputType) {
@@ -24,20 +24,8 @@ namespace OmniGlyph.Internals {
                     return false;
             }
         }
-        public override bool Equals(object obj) {
-            if (obj == null || GetType() != obj.GetType()) {
-                return false;
-            }
-            InputCondition c = (InputCondition)obj;
-            return keys.SequenceEqual(c.keys) && inputType == c.inputType;
-        }
-        public override int GetHashCode() {
-            int hash = 17;
-            foreach (KeyCode key in keys) {
-                hash = hash ^ 31 + key.GetHashCode();
-            }
-            hash = hash ^ 31 + inputType.GetHashCode();
-            return hash;
+        public override string ToString() {
+            return $"InputCondition: {string.Join("+", keys)}, {inputType}";
         }
     }
 }
