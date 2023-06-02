@@ -2,140 +2,154 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using OmniGlyph.Actors;
 using OmniGlyph.Configs;
 using OmniGlyph.Internals;
 using OmniGlyph.Internals.Debugging;
 using UnityEngine;
+using UnityEngine.UIElements;
+using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 
 namespace OmniGlyph.Combat.Field {
-    public class Sector {
-        public List<CombatActor> combatActors { get; private set; }
-        public Vector3 Center {
-            get {
-                return (_boundingBox.Item1 + _boundingBox.Item2) / 2f;
-            }
-        }
-        public static event Action<Sector, Sector, CombatActor> ActorMoved;
-        public CombatRanges CombatRange { get; set; }
-        public Side Side { get; }
-        private Vector3 _dimensions;
-        public Vector3 Dimensions {
-            get {
-                return _dimensions;
-            }
-        }
-        public Sector[] Children {
-            get {
-                return _children;
-            }
-        }
-        private Sector _parent;
-        private Sector[] _children = new Sector[] { };
+    public class Sector : OmniMono {
+        private bool _isRoot = false;
+        [SerializeField]
+        private List<Actor> _actors;
+        [SerializeField]
+        private CombatRanges _combatRange;
+        [SerializeField]
+        private Side _side;
+        [SerializeField]
+        private float _stripeSize;
+        public List<Actor> Actors { get { return _actors; } private set { _actors = value; } }
 
-        private Tuple<Vector3, Vector3> _boundingBox;
-        private InternalDebugger _debugger;
-        public Sector(Vector3 dimensons, Vector3 center, Sector parent, Side side, CombatRanges combatRange) {
-            Init(dimensons, center, parent);
-            CombatRange = combatRange;
+        public static event Action<Sector, Sector, Actor> ActorMoved;
+        public CombatRanges CombatRange { get { return _combatRange; } set { _combatRange = value; } }
+        public Side Side { get { return _side; } private set { _side = value; } }
+
+        private SectorStrip[] _sectorStrips;
+        private string GetSectorName() {
+            return $"Sector {CombatRange} {Side}";
+        }
+        private void SectorInit(Func<Vector3, Sector, Sector> sectorSpawner, Side side, CombatRanges combatRange, float stripeSize) {
+            SectorInit(side, combatRange, stripeSize);
+            tag = "CombatSector";
+            SpawnChildSector(sectorSpawner, side, stripeSize);
+        }
+        private void SectorInit(Side side, CombatRanges combatrange, float stripeSize) {
+            CombatRange = combatrange;
             Side = side;
+            Actors = new List<Actor>();
+            name = GetSectorName();
 
+            GenerateStrips(stripeSize);
+            Debugger.Log($"Sector {name} initialized with size {transform.lossyScale}");
+            Debugger.Watch(new DebugObjectProperties(transform.lossyScale * 0.9f, Color.red, PrimitiveType.Cube));
+        }
+        public void SectorInit(Func<Vector3, Sector, Sector> sectorSpawner, float stripeSize) {
+            if (transform.parent != null && transform.parent.GetComponent<Sector>() != null) {
+                Debugger.ThrowCriticalError("SectorInit should only be called on the root sector");
+            }
+            _isRoot = true;
+            SectorInit(Side.Middle, CombatRanges.Close, stripeSize);
+            tag = "RootCombatSector";
+            for (int i = -1; i <= 1; i += 2) {
+                if (!SpawnChildSector(sectorSpawner, (Side)i, stripeSize).HasValue) {
+                    Debugger.ThrowCriticalError("Failed to spawn child sector");
+                }
+            }
+        }
+        private void GenerateStrips(float stripeSize) {
+            int stripCount = Mathf.FloorToInt(transform.lossyScale.z / stripeSize);
+            float remainingSizeZ = transform.lossyScale.z - (stripCount * stripeSize);
+            float offset = remainingSizeZ / 2f + stripeSize / 2f;
+            _sectorStrips = new SectorStrip[stripCount];
+
+            Debugger.Log($"Size = {stripeSize}\nCount = {stripCount}\nremainingSizeZ = {remainingSizeZ}\noffset={offset}");
+            for (int i = 0; i < _sectorStrips.Length; i++) {
+                float zPos = transform.position.z - (transform.lossyScale.z / 2f) + offset + (stripeSize * i);
+                Vector3 stripCenter = new Vector3(transform.position.x, transform.position.y, zPos);
+
+                GameObject strip = new GameObject($"{name} Strip {i}");
+                strip.transform.position = stripCenter;
+                strip.transform.localScale = new Vector3(transform.lossyScale.x, transform.lossyScale.y, stripeSize);
+                strip.transform.SetParent(transform, true);
+                strip.name = $"{name} Strip {i}";
+                _sectorStrips[i] = strip.AddComponent<SectorStrip>();
+            }
+        }
+        private Maybe<Sector> SpawnChildSector(Func<Vector3, Sector, Sector> sectorSpawner, Side side, float stripeSize) {
             short lastEnum = Enum.GetValues(typeof(CombatRanges)).Cast<short>().Max();
-            if (lastEnum != (short)CombatRange) {
-                CombatRanges furtherEnum = Enum.Parse<CombatRanges>(((short)CombatRange << 1).ToString());
-                _children = new Sector[] {
-                new Sector(_dimensions, Center + ((Side == Side.Left) ? Vector3.left : Vector3.right) * _dimensions.x, this, Side, furtherEnum), // TODO: The increasing of combat ranges ain't working
-                };
+            if (lastEnum == (short)CombatRange) {
+                return Maybe<Sector>.None();
             }
+            Sector s = sectorSpawner(transform.position + Vector3.Scale(transform.lossyScale, Vector3.right) * (side == Side.Left ? -1 : 1), this);
+            s.SectorInit(sectorSpawner, side, Enum.Parse<CombatRanges>(((short)CombatRange << 1).ToString()), stripeSize);
+            return Maybe<Sector>.Some(s);
         }
-        public Sector(Vector3 dimensions, Vector3 center) {
-            Init(dimensions, center, null);
-            CombatRange = CombatRanges.Close;
-            Side = Side.Middle;
+        public void DestroySector() {
+            Debugger.Log($"Destroying sector {name}, is root: {_isRoot}");
 
-            _children = new Sector[] {
-            new Sector(_dimensions, Center - (Vector3.right * _dimensions.x), this, Side.Left, (CombatRanges)((short)CombatRange << 1)),
-            new Sector(_dimensions, Center + (Vector3.right * _dimensions.x), this, Side.Right, (CombatRanges)((short)CombatRange << 1)),
-            };
-        }
-        private void Init(Vector3 dimensions, Vector3 center, Sector parent) {
-            _dimensions = dimensions;
-            _parent = parent;
-            _boundingBox = new Tuple<Vector3, Vector3>(
-                new Vector3(center.x - (_dimensions.x / 2), center.y, center.z - (_dimensions.z / 2)),
-                new Vector3(center.x + (_dimensions.x / 2), center.y, center.z + (_dimensions.z / 2))
-            );
-            combatActors = new List<CombatActor>();
-
-            GameObject controller = GameObject.FindGameObjectWithTag("GameController");
-            InternalsManager im = controller.GetComponent<InternalsManager>();
-            BattleController bc = controller.GetComponent<BattleController>();
-
-            _debugger = im.Get<InternalDebugger>();
-            _debugger.StartVisualizingSector(a => bc.CombatEnded += a, this);
-            _debugger.Log($"Sector created with bounding box {_boundingBox.Item1} to {_boundingBox.Item2}\n Center: {Center}");
-
-        }
-        public void Destroy() {
-            foreach (Sector child in _children) {
-                child.Destroy();
+            foreach (Transform child in transform) {
+                if (child == this) {
+                    continue;
+                }
+                child.GetComponent<Sector>()?.DestroySector();
             }
-            _debugger.Log($"Sector destroyed with bounding box {_boundingBox.Item1} to {_boundingBox.Item2}\n Center: {Center}");
-
+            Debugger.Log($"Sector destroyed with position: {transform.position}");
+            Destroy(gameObject);
         }
         public Sector GetRoot() {
-            if (_parent == null) {
+            if (_isRoot) {
                 return this;
             }
-            return _parent.GetRoot();
+            return transform.parent.GetComponent<Sector>().GetRoot();
         }
-        public Vector3 TransferCombatActor(CombatActor targetActor, Side moveDirection) {
-            if (!combatActors.Contains(targetActor) ||
-                (_children.Length == 0 && moveDirection == Side)) {
-                return Center;
-            }
-            if (Side == Side.Middle) {
-                switch (moveDirection) {
-                    case Side.Left:
-                        return TransferCombatActor(targetActor, _children[0]);
-                    case Side.Right:
-                        return TransferCombatActor(targetActor, _children[1]);
-                    default:
-                        return Center;
+        public Maybe<SectorStrip> AddActor(Side sectorSide, Actor actor) {
+            foreach (int i in ActorStripeIndexGenerator()) {
+                Debugger.Log($"Checking strip {i}/{_sectorStrips.Length - 1} for actor {actor.name}");
+                if (_sectorStrips[i].HasActor(actor)) {
+                    Debugger.ThrowCriticalError($"Actor {actor.name} already exists in sector {name}");
+                } else if (_sectorStrips[i].HasActor(sectorSide)) {
+                    continue;
                 }
-            } else if (Side != moveDirection) {
-                return TransferCombatActor(targetActor, _parent);
-            } else {
-                return TransferCombatActor(targetActor, _children[0]);
+                Debugger.Log($"Adding actor {actor.name} to strip {i}/{_sectorStrips.Length - 1} at {_sectorStrips[i].Center}");
+                _sectorStrips[i].SetActor(sectorSide, actor);
+                return Maybe<SectorStrip>.Some(_sectorStrips[i]);
+            }
+            return Maybe<SectorStrip>.None();
+        }
+        public void RemoveActor(Actor actor) {
+            foreach (int i in ActorStripeIndexGenerator()) {
+                if (_sectorStrips[i].HasActor(actor)) {
+                    _sectorStrips[i].RemoveActor(actor);
+                    return;
+                }
+
+                Debugger.ThrowCriticalError($"Actor {actor.name} does not exist in sector {name}");
             }
         }
-        private Vector3 TransferCombatActor(CombatActor targetActor, Sector targetSector) {
-            Vector3 placedPosition = targetSector.PlaceCombatActor(targetActor);
-            combatActors.Remove(targetActor);
-            ActorMoved?.Invoke(this, targetSector, targetActor);
-            return placedPosition;
+        private IEnumerable<int> ActorStripeIndexGenerator() {
+            int middleIndex = Mathf.FloorToInt((_sectorStrips.Length - 1) / 2f);
+
+            for (int i = 1; i < _sectorStrips.Length; i++) {
+                int indexMod = (i % 2 == 0 ? 1 : -1) * Mathf.FloorToInt(i / 2f);
+                yield return middleIndex + indexMod;
+            }
         }
 
-        public Vector3 PlaceCombatActor(CombatActor combatActor) {
-            combatActors.Add(combatActor);
-            Vector3 targetPosition = Center;
-            if (combatActor.IsOnPlayerSide) {
-                targetPosition = GetHalfCenter(Side.Left);
-            } else {
-                targetPosition = GetHalfCenter(Side.Right);
+        public Sector GetSector(Side side, CombatRanges range) {
+            Debugger.Log($"Checking sector {name} for side {side} and range {range}; This sector side: {Side} range: {CombatRange}");
+            if (Side == side && CombatRange == range) {
+                return this;
             }
-            // TODO: Add a case when there are multiple actors in the same sector
-            combatActor.ParentActor.SetPosition(targetPosition);
-            return targetPosition;
-        }
-        private Vector3 GetHalfCenter(Side side) {
-            switch (side) {
-                case Side.Left:
-                    return Center - (Vector3.right * (_dimensions.x / 4));
-                case Side.Right:
-                    return Center + (Vector3.right * (_dimensions.x / 4));
-                default:
-                    return Center;
+            foreach (Transform child in transform) {
+                Sector s = child.GetComponent<Sector>()?.GetSector(side, range);
+                if (s != null) {
+                    return s;
+                }
             }
+            return null;
         }
     }
 }
