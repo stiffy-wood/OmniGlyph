@@ -13,3 +13,7 @@ Assets/Settings
 Assets/TutorialInfo
 Assets/*.asset
 Assets/*meta
+*.wav
+*.mp3
+Ultimate Game Music Collection/*
+FastScriptReload/*

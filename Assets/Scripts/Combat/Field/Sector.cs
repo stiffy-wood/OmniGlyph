@@ -16,44 +16,44 @@ namespace OmniGlyph.Combat.Field {
         [SerializeField]
         private List<Actor> _actors;
         [SerializeField]
-        private CombatRanges _combatRange;
-        [SerializeField]
-        private Side _side;
-        [SerializeField]
         private float _stripeSize;
+        [SerializeField]
+        private SectorData _sectorData;
         public List<Actor> Actors { get { return _actors; } private set { _actors = value; } }
 
         public static event Action<Sector, Sector, Actor> ActorMoved;
-        public CombatRanges CombatRange { get { return _combatRange; } set { _combatRange = value; } }
-        public Side Side { get { return _side; } private set { _side = value; } }
-
+        //public CombatRanges CombatRange { get { return _combatRange; } set { _combatRange = value; } }
+        //public Side Side { get { return _side; } private set { _side = value; } }
+        public SectorData SectorData { get { return _sectorData; } }
         private SectorStrip[] _sectorStrips;
-        private string GetSectorName() {
-            return $"Sector {CombatRange} {Side}";
-        }
+
+        // Non-root sector init
         private void SectorInit(Func<Vector3, Sector, Sector> sectorSpawner, Side side, CombatRanges combatRange, float stripeSize) {
             SectorInit(side, combatRange, stripeSize);
             tag = "CombatSector";
             SpawnChildSector(sectorSpawner, side, stripeSize);
         }
-        private void SectorInit(Side side, CombatRanges combatrange, float stripeSize) {
-            CombatRange = combatrange;
-            Side = side;
+        // Common sector init
+        private void SectorInit(Side side, CombatRanges combatRange, float stripeSize) {
+            _sectorData = new SectorData();
+            _sectorData.SetPos(side, combatRange);
             Actors = new List<Actor>();
-            name = GetSectorName();
+            name = SectorData.SectorName;
 
             GenerateStrips(stripeSize);
             Debugger.Log($"Sector {name} initialized with size {transform.lossyScale}");
             Debugger.Watch(new DebugObjectProperties(transform.lossyScale * 0.9f, Color.red, PrimitiveType.Cube));
         }
+        // Root sector init
         public void SectorInit(Func<Vector3, Sector, Sector> sectorSpawner, float stripeSize) {
+
             if (transform.parent != null && transform.parent.GetComponent<Sector>() != null) {
                 Debugger.ThrowCriticalError("SectorInit should only be called on the root sector");
             }
             _isRoot = true;
             SectorInit(Side.Middle, CombatRanges.Close, stripeSize);
             tag = "RootCombatSector";
-            for (int i = -1; i <= 1; i += 2) {
+            for (int i = 1; i <= 2; i++) {
                 if (!SpawnChildSector(sectorSpawner, (Side)i, stripeSize).HasValue) {
                     Debugger.ThrowCriticalError("Failed to spawn child sector");
                 }
@@ -79,13 +79,18 @@ namespace OmniGlyph.Combat.Field {
             }
         }
         private Maybe<Sector> SpawnChildSector(Func<Vector3, Sector, Sector> sectorSpawner, Side side, float stripeSize) {
-            short lastEnum = Enum.GetValues(typeof(CombatRanges)).Cast<short>().Max();
-            if (lastEnum == (short)CombatRange) {
+            Debugger.Log($"Spawning child sector for {name} on side {side}");
+            byte lastEnum = Enum.GetValues(typeof(CombatRanges)).Cast<byte>().Max();
+            if (lastEnum == (byte)SectorData.GetRange()) {
                 return Maybe<Sector>.None();
             }
             Sector s = sectorSpawner(transform.position + Vector3.Scale(transform.lossyScale, Vector3.right) * (side == Side.Left ? -1 : 1), this);
-            s.SectorInit(sectorSpawner, side, Enum.Parse<CombatRanges>(((short)CombatRange << 1).ToString()), stripeSize);
+            s.SectorInit(sectorSpawner, side, GetNextRange(SectorData.GetRange()), stripeSize);
+            Debugger.Log($"Child sector {s.name} spawned with range {GetNextRange(SectorData.GetRange())}");
             return Maybe<Sector>.Some(s);
+        }
+        private CombatRanges GetNextRange(CombatRanges currentRange) {
+            return Enum.Parse<CombatRanges>(((byte)currentRange << 1).ToString());
         }
         public void DestroySector() {
             Debugger.Log($"Destroying sector {name}, is root: {_isRoot}");
@@ -138,13 +143,14 @@ namespace OmniGlyph.Combat.Field {
             }
         }
 
-        public Sector GetSector(Side side, CombatRanges range) {
-            Debugger.Log($"Checking sector {name} for side {side} and range {range}; This sector side: {Side} range: {CombatRange}");
-            if (Side == side && CombatRange == range) {
+        public Sector GetSector(SectorPosition sectorPos) {
+
+            Debugger.Log($"Checking sector {name} for side {SectorData.GetSide(sectorPos)} and range {SectorData.GetRange(sectorPos)}; This sector side: {_sectorData.GetSide()} range: {_sectorData.GetRange()}");
+            if (SectorData.SectorPosition == sectorPos) {
                 return this;
             }
             foreach (Transform child in transform) {
-                Sector s = child.GetComponent<Sector>()?.GetSector(side, range);
+                Sector s = child.GetComponent<Sector>()?.GetSector(sectorPos);
                 if (s != null) {
                     return s;
                 }

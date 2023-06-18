@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82925c92a570dff41b5cc726e735478d, type: 3}
+  m_Name: PlayerCombatData
+  m_EditorClassIdentifier: 
+  _isOnPlayerSide: 1
+  _maxHealth: 100
+  _currentHealth: 100
+  _strength: 10
+  _maxEnergy: 100
+  _energy: 100
+  _equippedWeapon: {fileID: 11400000, guid: 88df51ac27196544792ecd4835ad5076, type: 2}
+  _equippedArmor: {fileID: 11400000, guid: 7ce8ef293f555f046bf1db8caa6dd443, type: 2}
+  _startingRange: 2
+  _agility: 0
+  _mind: 0

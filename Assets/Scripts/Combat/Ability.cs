@@ -4,8 +4,8 @@ using OmniGlyph.Actors;
 using OmniGlyph.Combat.Effects;
 using UnityEngine;
 
-namespace OmniGlyph.Combat {
-    public abstract class Ability {
+namespace OmniGlyph.Combat.Actions {
+    public abstract class Ability : CombatAction {
         public abstract AbilityType Type { get; }
         public abstract float EnergyCost { get; }
         public abstract Effect[] Effects { get; }
