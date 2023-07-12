@@ -13,13 +13,13 @@ using UnityEngine.AI;
 using UnityEngine.Networking;
 
 namespace OmniGlyph.Combat {
-    public class CombatContext : OmniMono {
+    public class CombatContext : OmniMonoComponent {
         public Vector3 SectorSize = new Vector3(6, 0, 10);
         public float SectorStripeSize = 1.5f;
 
         private Sector _rootSector;
         private TurnOrder _turnOrder;
-        private Dictionary<Actor, (Sector sector, SectorStrip strip)> _actorPositions;
+        private Dictionary<Actor, SectorStrip> _actorPositions;
 
         public SectorStrip SelectedStrip { get; private set; }
         void Start() {
@@ -56,7 +56,7 @@ namespace OmniGlyph.Combat {
             PrepareActors(actors);
         }
         private void PrepareActors(Actor[] actors) {
-            _actorPositions = new Dictionary<Actor, (Sector sector, SectorStrip strip)>();
+            _actorPositions = new Dictionary<Actor, SectorStrip>();
             foreach (Actor actor in actors) {
                 Side combatSide = actor.CombatData.IsOnPlayerSide ? Side.Left : Side.Right;
                 Side battlefieldSide = actor.CombatData.StartingRange == CombatRanges.Close ? Side.Middle : combatSide;
@@ -66,12 +66,14 @@ namespace OmniGlyph.Combat {
                 if (!actorStrip.HasValue) {
                     Debugger.ThrowCriticalError($"Actor {actor} could not be added to sector {actorSector}");
                 }
-                actor.CombatData.Initiative = GetInitiave() + actor.CombatData.Agility;
-                _actorPositions.Add(actor, (actorSector, actorStrip.Value));
+                SetActorInitiave(actor);
+                _actorPositions.Add(actor, actorStrip.Value);
             }
             _turnOrder = new TurnOrder(actors.OrderByDescending(a => a.CombatData.Initiative).ToList());
         }
-
+        private void SetActorInitiave(Actor actor) {
+            actor.CombatData.Initiative = GetInitiave() + actor.CombatData.Agility;
+        }
         private int GetInitiave() {
             return new System.Random().Next(1, 21);
         }
@@ -94,19 +96,20 @@ namespace OmniGlyph.Combat {
             return newSector;
         }
 
-        public void MoveActor(Actor actor, Sector sector, SectorStrip strip) {
+        public void MoveActor(Actor actor, SectorStrip strip) {
             if (!_actorPositions.ContainsKey(actor)) {
                 Debugger.ThrowCriticalError($"Actor {actor} is not in the combat context");
             }
-            _actorPositions[actor] = (sector, strip);
-            //TODO: implement the move
-            actor.SetPosition(strip.transform.position);
+            _actorPositions[actor].RemoveActor(actor);
+            _actorPositions[actor] = strip;
+
+            strip.SetActor(actor.CombatData.IsOnPlayerSide ? Side.Left : Side.Right, actor);
         }
-        public Maybe<(Sector sector, SectorStrip strip)> GetActorPosition(Actor actor) {
+        public Maybe<SectorStrip> GetActorPosition(Actor actor) {
             if (!_actorPositions.ContainsKey(actor)) {
-                return Maybe<(Sector sector, SectorStrip strip)>.None();
+                return Maybe<SectorStrip>.None();
             }
-            return Maybe<(Sector sector, SectorStrip strip)>.Some(_actorPositions[actor]);
+            return Maybe<SectorStrip>.Some(_actorPositions[actor]);
         }
         public static CombatRanges GetRangeBetweenSectors(Sector sector1, Sector sector2) {
             return SectorData.GetDistance(sector1.SectorData, sector2.SectorData);

@@ -18,8 +18,8 @@ namespace OmniGlyph.Combat.Actions.Abilities {
             return user.CombatData.EquippedWeapon.CombatRange;
         }
         public override bool CanUse(Actor user, Actor target) {
-            Sector userSector = user.GetSector().GetValueOrDefault(null);
-            Sector targetSector = user.GetSector().GetValueOrDefault(null);
+            Sector userSector = user.GetSectorStrip().GetValueOrDefault(null)?.ParentSector;
+            Sector targetSector = user.GetSectorStrip().GetValueOrDefault(null)?.ParentSector;
             if (userSector == null || targetSector == null) {
                 return false;
             }

@@ -4,7 +4,7 @@ using OmniGlyph.Actors;
 using UnityEngine;
 
 namespace OmniGlyph.Actors.Characters {
-    public class Braggi : BotActor {
+    public class BardActor : BotActor {
         private AudioSource _audioSource;
 
         private AudioClip[] _explorationMusic = new AudioClip[] { };
@@ -18,10 +18,9 @@ namespace OmniGlyph.Actors.Characters {
             } else {
                 _audioSource = audio;
             }
-            name = CharacterList.Bard;
         }
-        public override void InternalInit() {
-            base.InternalInit();
+        public override void Init() {
+            base.Init();
             LoadMusic();
             Context.GameStateChanged += OnGameStateChange;
             Debugger.Log("Braggi Initialized");

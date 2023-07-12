@@ -9,11 +9,13 @@ using OmniGlyph.Control;
 using OmniGlyph.Internals;
 using OmniGlyph.Internals.Debugging;
 using OmniGlyph.UI;
+using TMPro;
 using UnityEngine;
 namespace OmniGlyph.Actors {
     public class PlayerActor : Actor {
         [SerializeField]
         private InputManager _input;
+
         private InputManager Input {
             get {
                 if (_input == null) {
@@ -25,11 +27,11 @@ namespace OmniGlyph.Actors {
         protected override void Start() {
             base.Start();
             Trail = new PlayerFollowLine();
-            name = CharacterList.Player;
         }
         public new PlayerActorData Data { get { return (PlayerActorData)_data; } }
         public PlayerFollowLine Trail { get; private set; }
-        private void Update() {
+        protected override void Update() {
+            base.Update();
             if (Input == null) {
                 return;
             }
@@ -37,46 +39,64 @@ namespace OmniGlyph.Actors {
             Maybe<bool> isSprinting = _input.IsPlayerSprinting();
             _targetPos += newTargetPos.GetValueOrDefault(Vector3.zero) * Data.WalkSpeed * (isSprinting.GetValueOrDefault(false) ? Data.RunSpeedModifier : 1);
 
-            if (Context.CurrentGameState == GameStates.Roam) {
+            if (GameContext.IsGameStateEqual(Context.CurrentGameState, GameStates.Roam)) {
                 Maybe<IInteractable> interactable = CheckInteract();
                 if (interactable.HasValue && _input.IsPlayerInteracting().GetValueOrDefault(false)) {
                     interactable.Value.Interact();
                 }
                 Trail.AddPoint(transform.position);
             }
-            if (Context.CurrentGameState == GameStates.Combat) {
+            if (GameContext.IsGameStateEqual(Context.CurrentGameState, GameStates.Combat)) {
                 TestCombat();
             }
 
         }
-
+        protected override void OnGameStateChanged(GameStates newGameState) {
+            base.OnGameStateChanged(newGameState);
+        }
         private Maybe<IInteractable> CheckInteract() {
             RaycastHit hit;
-            if (Physics.BoxCast(transform.position, Vector3.one / 2f, transform.forward, out hit, transform.rotation, 2f)) {
+            if (GameContext.IsGameStateEqual(Context.CurrentGameState, GameStates.Roam) &&
+                Physics.BoxCast(transform.position, Vector3.one / 2f, transform.forward, out hit, transform.rotation, 2f)) {
                 GameObject hitObject = hit.collider.gameObject;
                 IInteractable interactable = hitObject.GetComponent<IInteractable>();
                 if (interactable != null) {
-                    Context.UIContext.ShowInteractOption();
+                    Debugger.Log($"Found interactable: {interactable}");
+                    ShowInteractOption();
                     return Maybe<IInteractable>.Some(interactable);
                 }
             }
-            Context.UIContext.HideInteractOption();
+            HideInteractOption();
             return Maybe<IInteractable>.None();
         }
 
         private void TestCombat() {
             Maybe<bool> isPressed = Context.InputManager.IsTestButtonPressed();
-            if (!isPressed.HasValue) {
+            Debugger.Log($"Test button pressed: {(isPressed.HasValue ? isPressed.Value.ToString() : "null")}");
+            if (!isPressed.GetValueOrDefault(false))
                 return;
-            }
-            if (Context.CombatContext.SelectedStrip == null) {
+
+            if (Context.CombatContext.SelectedStrip == null || Context.CombatContext.SelectedStrip == GetSectorStrip().GetValueOrDefault(null))
                 return;
-            }
+
+            Debugger.Log($"Selected strip: {Context.CombatContext.SelectedStrip}");
             ActionData data = new ActionData(this, Context.CombatContext.SelectedStrip);
             MoveAction action = new MoveAction();
             action.Execute(data);
         }
 
 
+        public void ShowInteractOption() {
+            ShowOverheadText(new TextProperties() {
+                Text = $"Press [{Context.UIContext.ColorizeText("E", Context.UIContext.ActionColor)}] to interact",
+                Alignment = TextAlignmentOptions.Center,
+                FontSize = 16,
+                Color = Context.UIContext.DefaultColor
+            });
+            return;
+        }
+        public void HideInteractOption() {
+            HideOverheadText();
+        }
     }
 }

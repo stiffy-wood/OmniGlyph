@@ -11,7 +11,7 @@ using UnityEngine.UIElements;
 using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 
 namespace OmniGlyph.Combat.Field {
-    public class Sector : OmniMono {
+    public class Sector : OmniMonoInstance {
         private bool _isRoot = false;
         [SerializeField]
         private List<Actor> _actors;
@@ -19,6 +19,7 @@ namespace OmniGlyph.Combat.Field {
         private float _stripeSize;
         [SerializeField]
         private SectorData _sectorData;
+
         public List<Actor> Actors { get { return _actors; } private set { _actors = value; } }
 
         public static event Action<Sector, Sector, Actor> ActorMoved;
@@ -42,7 +43,7 @@ namespace OmniGlyph.Combat.Field {
 
             GenerateStrips(stripeSize);
             Debugger.Log($"Sector {name} initialized with size {transform.lossyScale}");
-            Debugger.Watch(new DebugObjectProperties(transform.lossyScale * 0.9f, Color.red, PrimitiveType.Cube));
+            //Debugger.Watch(new DebugObjectProperties(transform.lossyScale * 0.9f, Color.red, PrimitiveType.Cube));
         }
         // Root sector init
         public void SectorInit(Func<Vector3, Sector, Sector> sectorSpawner, float stripeSize) {
@@ -142,6 +143,8 @@ namespace OmniGlyph.Combat.Field {
                 yield return middleIndex + indexMod;
             }
         }
+
+
 
         public Sector GetSector(SectorPosition sectorPos) {
 

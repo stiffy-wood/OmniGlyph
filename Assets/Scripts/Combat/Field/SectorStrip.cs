@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using OmniGlyph.Actors;
 using OmniGlyph.Control;
 using OmniGlyph.Internals;
@@ -8,7 +10,7 @@ using UnityEngine;
 using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 
 namespace OmniGlyph.Combat.Field {
-    public class SectorStrip : OmniMono {
+    public class SectorStrip : OmniMonoInstance {
         private Actor _actorLeft;
         private Actor _actorRight;
 
@@ -27,22 +29,27 @@ namespace OmniGlyph.Combat.Field {
             _collider.isTrigger = true;
 
             Debugger.Watch(
-                transform.position + Vector3.up * transform.lossyScale.y / 4,
+                transform.position - Vector3.up * transform.lossyScale.y,
                 new DebugObjectProperties(
-                        transform.lossyScale * 0.8f,
+                        transform.lossyScale * 0.85f,
                         Color.cyan,
                         PrimitiveType.Cube)
                 );
-            InternalInit();
+
+            Init();
+
+            //transform.position = transform.position + Vector3.down * (transform.lossyScale.y / 4f);
         }
 
         public void SetActor(Side side, Actor actor) {
             if (side == Side.Left) {
                 _actorLeft = actor;
                 actor.SetPosition(left);
+                //actor.SetRotation(Quaternion.Euler(Vector3.right));
             } else {
                 _actorRight = actor;
                 actor.SetPosition(right);
+                //actor.SetRotation(Quaternion.Euler(Vector3.left));
             }
         }
         public Maybe<Actor> GetActor(Side side) {

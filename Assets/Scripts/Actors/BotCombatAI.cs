@@ -4,7 +4,7 @@ using OmniGlyph.Internals;
 using UnityEngine;
 
 namespace OmniGlyph.Actors {
-    public class BotCombatAI : OmniMono {
+    public class BotCombatAI : OmniMonoInstance {
         [SerializeField]
         private Actor _target;
 

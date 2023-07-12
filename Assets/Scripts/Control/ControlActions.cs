@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace OmniGlyph.Control {
     public enum ControlActions {
-        WalkForward,
-        WalkBackward,
-        WalkLeft,
-        WalkRight,
-        Sprint,
+        MoveForward,
+        MoveBackward,
+        MoveLeft,
+        MoveRight,
+        Run,
         Interact,
         Test
     }

@@ -21,17 +21,9 @@ namespace OmniGlyph.Internals {
             get {
                 return _ctx;
             }
-            private set {
+            protected set {
                 _ctx = value;
             }
-        }
-        // For controllers and other singletons initialized using GameContext
-        public virtual void Init(GameContext context) {
-            _ctx = context;
-        }
-        // For objects that are not initialized using GameContext
-        public virtual void InternalInit() {
-            _ctx = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameContext>();
         }
     }
 }

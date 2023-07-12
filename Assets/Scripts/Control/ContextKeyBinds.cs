@@ -7,8 +7,8 @@ namespace OmniGlyph.Control {
     public class ContextKeyBinds : ScriptableObject {
         [SerializeField]
         KeyBind[] _keyBinds;
-        public Dictionary<string, KeyCode> Load() {
-            Dictionary<string, KeyCode> keyBinds = new Dictionary<string, KeyCode>();
+        public Dictionary<ControlActions, KeyCode> Load() {
+            Dictionary<ControlActions, KeyCode> keyBinds = new Dictionary<ControlActions, KeyCode>();
             foreach (KeyBind keyBind in _keyBinds) {
                 keyBinds.Add(keyBind.name, keyBind.key);
             }

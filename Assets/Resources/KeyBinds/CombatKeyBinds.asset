@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: CombatKeyBinds
   m_EditorClassIdentifier: 
   _keyBinds:
-  - name: Test
+  - name: 6
     key: 113

@@ -6,7 +6,7 @@ using UnityEngine;
 namespace OmniGlyph.Control {
     [Serializable]
     public struct KeyBind {
-        public string name;
+        public ControlActions name;
         public KeyCode key;
     }
 }

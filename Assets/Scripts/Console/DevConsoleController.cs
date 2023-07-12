@@ -4,7 +4,7 @@ using OmniGlyph.Internals;
 using UnityEngine;
 
 namespace OmniGlyph.Console {
-    public class DevConsoleController : OmniMono {
+    public class DevConsoleController : OmniMonoComponent {
 
     }
 }

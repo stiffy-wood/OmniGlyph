@@ -13,5 +13,7 @@ MonoBehaviour:
   m_Name: BasePlayerData
   m_EditorClassIdentifier: 
   _movementLag: 0.2
+  _name: 
+  _profilePic: {fileID: 2800000, guid: 953ba09e76d4e994b823dfd99466bc23, type: 3}
   _walkSpeed: 0.01
   _runSpeedModifier: 2

@@ -4,7 +4,7 @@ using OmniGlyph.Internals;
 using UnityEngine;
 
 namespace OmniGlyph {
-    public class StoryContext : OmniMono {
+    public class StoryContext : OmniMonoComponent {
         // Start is called before the first frame update
         void Start() {
 

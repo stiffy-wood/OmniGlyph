@@ -331,6 +331,12 @@
     <Reference Include="log4netPlastic">
       <HintPath>Library\PackageCache\com.unity.collab-proxy@2.0.3\Lib\Editor\PlasticSCM\log4netPlastic.dll</HintPath>
     </Reference>
+    <Reference Include="Kybernetik.InspectorGadgets.Editor.Lite">
+      <HintPath>Packages\com.kybernetik.inspector-gadgets\Editor\Other\Inspector Gadgets Lite\Kybernetik.InspectorGadgets.Editor.Lite.dll</HintPath>
+    </Reference>
+    <Reference Include="Kybernetik.InspectorGadgets.Lite">
+      <HintPath>Packages\com.kybernetik.inspector-gadgets\Runtime\Kybernetik.InspectorGadgets.Lite.dll</HintPath>
+    </Reference>
     <Reference Include="unityplastic">
       <HintPath>Library\PackageCache\com.unity.collab-proxy@2.0.3\Lib\Editor\PlasticSCM\unityplastic.dll</HintPath>
     </Reference>
@@ -810,6 +816,14 @@
     <ProjectReference Include="Assembly-CSharp.csproj">
       <Project>{B5EAF40C-379A-08E0-5EEA-D747652AF0B1}</Project>
       <Name>Assembly-CSharp</Name>
+    </ProjectReference>
+    <ProjectReference Include="Kybernetik.InspectorGadgets.csproj">
+      <Project>{66367383-252D-6EC1-1117-1AB2C5C8EAA8}</Project>
+      <Name>Kybernetik.InspectorGadgets</Name>
+    </ProjectReference>
+    <ProjectReference Include="Kybernetik.InspectorGadgets.Editor.csproj">
+      <Project>{440B2E53-9057-7AE4-4558-2B764D8EC49B}</Project>
+      <Name>Kybernetik.InspectorGadgets.Editor</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -13,7 +13,6 @@ namespace OmniGlyph.Combat.Actions {
             }
             actionData.CombatContext.MoveActor(
                 actionData.Owner,
-                actionData.TargetStrip.Value.ParentSector,
                 actionData.TargetStrip.Value
                 );
         }

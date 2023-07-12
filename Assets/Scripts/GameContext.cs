@@ -5,6 +5,7 @@ using System.Linq;
 using OmniGlyph.Actors;
 using OmniGlyph.Cam;
 using OmniGlyph.Combat;
+using OmniGlyph.Console;
 using OmniGlyph.Control;
 using OmniGlyph.Internals;
 using OmniGlyph.Internals.Debugging;
@@ -30,6 +31,9 @@ namespace OmniGlyph {
         private UIContext _uiContext;
         [SerializeField]
         private StoryContext _storyContext;
+        [SerializeField]
+        private DevConsoleController _devConsole;
+
         public PlayerActor Player => _player;
         public PlayerCamera PlayerCamera => _playerCamera;
         public InputManager InputManager => _inputManager;
@@ -41,7 +45,7 @@ namespace OmniGlyph {
                 return _currentGameState;
             }
             set {
-                if (value != _currentGameState) {
+                if (!IsGameStateEqual(value, _currentGameState)) {
                     _currentGameState = value;
                     GameStateChanged?.Invoke(value);
                 }
@@ -51,16 +55,23 @@ namespace OmniGlyph {
         public bool isInit = false;
         public event Action<GameStates> GameStateChanged;
         void Awake() {
-            Init(this);
             OnGameStateChange(_currentGameState);
             GameStateChanged += OnGameStateChange;
             _uiContext = InitComponent<UIContext>();
             _inputManager = InitComponent<InputManager>();
             _combatContext = InitComponent<CombatContext>();
             _storyContext = InitComponent<StoryContext>();
+            _devConsole = InitComponent<DevConsoleController>();
 
-            _player = InitComponent<PlayerActor>(GameObject.FindGameObjectWithTag("Player"));
-            _playerCamera = InitComponent<PlayerCamera>(GameObject.FindGameObjectWithTag("MainCamera"));
+            _player = GameObject.FindGameObjectWithTag("Player")?.GetComponent<PlayerActor>();
+            _playerCamera = GameObject.FindGameObjectWithTag("MainCamera")?.GetComponent<PlayerCamera>();
+
+            if (_player == null) {
+                Debugger.ThrowCriticalError("Could not find PlayerActor");
+            }
+            if (_playerCamera == null) {
+                Debugger.ThrowCriticalError("Could not find PlayerCamera");
+            }
 
             isInit = true;
         }
@@ -72,28 +83,16 @@ namespace OmniGlyph {
             }
             Debugger.Log($"Game State Changed to {newState}");
         }
-        private T InitComponent<T>() where T : OmniMono {
+        private T InitComponent<T>() where T : OmniMonoComponent {
             return InitComponent<T>(gameObject);
         }
-        private T InitComponent<T>(GameObject targetObject) where T : OmniMono {
+        private T InitComponent<T>(GameObject targetObject) where T : OmniMonoComponent {
             T comp = targetObject.GetComponent<T>();
             if (comp == null) {
                 comp = targetObject.AddComponent<T>();
             }
             comp.Init(this);
             return comp;
-        }
-        // Update is called once per frame
-        void Update() {
-            if (Input.GetKeyUp(KeyCode.B)) {
-                if (CurrentGameState == GameStates.Roam) {
-                    CurrentGameState = GameStates.Combat;
-                } else {
-                    CurrentGameState = GameStates.Roam;
-                }
-            }
-            Debugger.Log($"Context InstanceID {GetInstanceID()}");
-            Debugger.Log($"Current Input Mgr: {InputManager}");
         }
 
         public Actor[] GetActorsInScene() {
@@ -125,6 +124,12 @@ namespace OmniGlyph {
                 actors.Add(actor);
             }
             return actors.ToArray();
+        }
+        public static bool HasGameState(GameStates a, GameStates b) {
+            return ((byte)a & (byte)b) > 0;
+        }
+        public static bool IsGameStateEqual(GameStates a, GameStates b) {
+            return a == b;
         }
 
     }

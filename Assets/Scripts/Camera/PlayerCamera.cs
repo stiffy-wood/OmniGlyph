@@ -7,7 +7,7 @@ using OmniGlyph.Internals;
 using UnityEngine;
 
 namespace OmniGlyph.Cam {
-    public class PlayerCamera : OmniMono {
+    public class PlayerCamera : OmniMonoInstance {
         [SerializeField]
         private Camera _cam;
         [SerializeField]
@@ -21,14 +21,14 @@ namespace OmniGlyph.Cam {
         public Camera Cam => _cam;
         void Start() {
             _cam = GetComponent<Camera>();
+            Init();
         }
 
-        public override void Init(GameContext context) {
-            base.Init(context);
-            Context.GameStateChanged += OnGameStateChanged;
+        public override void Init() {
+            base.Init();
             InitFocusObject(Context.StateContext.CameraContext.FocusObjectTag);
-
         }
+
         private void Update() {
             if (_focusObject == null) {
                 InitFocusObject(Context.StateContext.CameraContext.FocusObjectTag);
@@ -66,7 +66,7 @@ namespace OmniGlyph.Cam {
             _targetPos = _focusObject.transform.position + Context.StateContext.CameraContext.Offset;
             _targetLookPos = _focusObject.transform.position;
         }
-        void OnGameStateChanged(GameStates _) {
+        protected override void OnGameStateChanged(GameStates _) {
             Debugger.Log($"{nameof(PlayerCamera)}Game State Changed: {Context.CurrentGameState}");
             _focusObject = null;
             InitFocusObject(Context.StateContext.CameraContext.FocusObjectTag);

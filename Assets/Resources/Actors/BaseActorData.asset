@@ -13,3 +13,5 @@ MonoBehaviour:
   m_Name: BaseActorData
   m_EditorClassIdentifier: 
   _movementLag: 0.3
+  _name: 
+  _profilePic: {fileID: 2800000, guid: 72a22a23d4c360b4e98cc0b0cd024d66, type: 3}

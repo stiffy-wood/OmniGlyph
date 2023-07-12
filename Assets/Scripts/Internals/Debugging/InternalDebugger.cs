@@ -16,6 +16,7 @@ namespace OmniGlyph.Internals.Debugging {
             GameObject debugObject = GameObject.CreatePrimitive(properties.Type);
             debugObject.GetComponent<MeshRenderer>().material.color = properties.Color;
             debugObject.transform.localScale = properties.Size;
+            Destroy(debugObject.GetComponent<Collider>());
             return debugObject;
         }
         private bool IsDebug() {
@@ -24,13 +25,13 @@ namespace OmniGlyph.Internals.Debugging {
         public void Log(object message) {
             if (!IsDebug())
                 return;
-            Debug.Log(message);
+            Debug.Log(FormatLog(message));
         }
         public void LogWarning(object message) {
-            Debug.LogWarning(message);
+            Debug.LogWarning(FormatLog(message));
         }
         public void LogError(object message) {
-            Debug.LogError(message);
+            Debug.LogError(FormatLog(message));
         }
 
         public void Watch(Vector3 watchingPos, DebugObjectProperties properties = null) {
@@ -96,6 +97,9 @@ namespace OmniGlyph.Internals.Debugging {
             if (_visualizedObj != null) {
                 _visualizedObj.transform.position = transform.position;
             }
+        }
+        private string FormatLog(object message) {
+            return string.Format("[{0}] |{1}| - {2}", name, DateTime.Now.ToString("HH:mm:ss"), message);
         }
     }
 }

@@ -5,8 +5,8 @@ using OmniGlyph.Internals.Debugging;
 using UnityEngine;
 
 namespace OmniGlyph.Control {
-    public class InputManager : OmniMono {
-        private Dictionary<string, KeyCode> _currentKeyBinds;
+    public class InputManager : OmniMonoComponent {
+        private Dictionary<ControlActions, KeyCode> _currentKeyBinds;
 
         public override void Init(GameContext context) {
             base.Init(context);
@@ -26,21 +26,21 @@ namespace OmniGlyph.Control {
             }
             return value;
         }
-        private Maybe<KeyCode> GetKeyBind(string keyBindName) {
-            return _currentKeyBinds.TryGetValue(keyBindName, out KeyCode keyCode) ? Maybe<KeyCode>.Some(keyCode) : Maybe<KeyCode>.None();
+        private Maybe<KeyCode> GetKeyBind(ControlActions keyBind) {
+            return _currentKeyBinds.TryGetValue(keyBind, out KeyCode keyCode) ? Maybe<KeyCode>.Some(keyCode) : Maybe<KeyCode>.None();
         }
-        private Maybe<KeyCode[]> GetKeyBinds(params string[] keyBindNames) {
+        private Maybe<KeyCode[]> GetKeyBinds(params ControlActions[] keyBinds) {
             List<KeyCode> keyCodes = new List<KeyCode>();
-            foreach (string keyBindName in keyBindNames) {
-                Maybe<KeyCode> maybeKeyCode = GetKeyBind(keyBindName);
+            foreach (ControlActions keyBind in keyBinds) {
+                Maybe<KeyCode> maybeKeyCode = GetKeyBind(keyBind);
                 if (maybeKeyCode.HasValue) {
                     keyCodes.Add(maybeKeyCode.Value);
                 }
             }
-            return keyCodes.Count == keyBindNames.Length ? Maybe<KeyCode[]>.Some(keyCodes.ToArray()) : Maybe<KeyCode[]>.None();
+            return keyCodes.Count == keyBinds.Length ? Maybe<KeyCode[]>.Some(keyCodes.ToArray()) : Maybe<KeyCode[]>.None();
         }
         public Maybe<Vector3> GetPlayerMovement() {
-            Maybe<KeyCode[]> keyCodes = GetKeyBinds(KeyBindNames.MoveForward, KeyBindNames.MoveBackward, KeyBindNames.MoveLeft, KeyBindNames.MoveRight);
+            Maybe<KeyCode[]> keyCodes = GetKeyBinds(ControlActions.MoveForward, ControlActions.MoveBackward, ControlActions.MoveLeft, ControlActions.MoveRight);
             if (!keyCodes.HasValue) {
                 return Maybe<Vector3>.None();
             }
@@ -51,15 +51,15 @@ namespace OmniGlyph.Control {
                 );
         }
         public Maybe<bool> IsPlayerSprinting() {
-            Maybe<KeyCode> keyCode = GetKeyBind(KeyBindNames.Run);
+            Maybe<KeyCode> keyCode = GetKeyBind(ControlActions.Run);
             return keyCode.HasValue ? Maybe<bool>.Some(Input.GetKey(keyCode.Value)) : Maybe<bool>.None();
         }
         public Maybe<bool> IsPlayerInteracting() {
-            Maybe<KeyCode> keyCode = GetKeyBind(KeyBindNames.Interact);
+            Maybe<KeyCode> keyCode = GetKeyBind(ControlActions.Interact);
             return keyCode.HasValue ? Maybe<bool>.Some(Input.GetKey(keyCode.Value)) : Maybe<bool>.None();
         }
         public Maybe<bool> IsTestButtonPressed() {
-            Maybe<KeyCode> keyCode = GetKeyBind(KeyBindNames.TestKeyBind);
+            Maybe<KeyCode> keyCode = GetKeyBind(ControlActions.Test);
             return keyCode.HasValue ? Maybe<bool>.Some(Input.GetKey(keyCode.Value)) : Maybe<bool>.None();
         }
         public bool GetMouseButtonUp(MouseButtons button) {

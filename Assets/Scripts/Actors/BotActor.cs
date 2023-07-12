@@ -14,7 +14,6 @@ namespace OmniGlyph.Actors {
         public BotCombatAI CombatAI => _combatAI;
         protected override void Start() {
             base.Start();
-            InternalInit();
             InitData();
         }
         protected void InitData() {
@@ -25,11 +24,9 @@ namespace OmniGlyph.Actors {
                 _combatData = Resources.Load<ActorCombatData>("Actors/BaseActorCombatData");
             }
         }
-        public override void InternalInit() {
-            base.InternalInit();
-        }
-        protected void OnGameStateChanged(GameStates newState) {
-            if (newState != GameStates.Roam) {
+        protected override void OnGameStateChanged(GameStates newState) {
+            base.OnGameStateChanged(newState);
+            if (!GameContext.IsGameStateEqual(newState, GameStates.Roam)) {
                 _wasFollowingPlayer = _isFollowingPlayer;
                 StopFollowingPlayer();
             } else if (_wasFollowingPlayer) {
@@ -40,14 +37,14 @@ namespace OmniGlyph.Actors {
             Debugger.Log($"Interacting with {name}");
         }
         public void StartFollowingPlayer() {
-            if (Context.CurrentGameState != GameStates.Roam) {
+            if (!GameContext.IsGameStateEqual(Context.CurrentGameState, GameStates.Roam)) {
                 return;
             }
             Context.Player.Trail.AddFollower(this);
             _isFollowingPlayer = true;
         }
         public void StopFollowingPlayer() {
-            if (Context.CurrentGameState != GameStates.Roam) {
+            if (!GameContext.IsGameStateEqual(Context.CurrentGameState, GameStates.Roam)) {
                 return;
             }
             Context.Player.Trail.RemoveFollower(this);

@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: RoamKeyBinds
   m_EditorClassIdentifier: 
   _keyBinds:
-  - name: Walk Forward
+  - name: 0
     key: 119
-  - name: Walk Backward
+  - name: 1
     key: 115
-  - name: Walk Left
+  - name: 2
     key: 97
-  - name: Walk Right
+  - name: 3
     key: 100
-  - name: Run
+  - name: 4
     key: 304
-  - name: Interact
+  - name: 5
     key: 101

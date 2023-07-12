@@ -5,32 +5,13 @@ using System.Linq;
 using OmniGlyph.Internals;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace OmniGlyph.UI {
-    public class UIContext : OmniMono {
+    public class UIContext : OmniMonoComponent {
         private Color _defaultColor = Color.white;
         private Color _actionColor = Color.yellow;
 
-        private record TextProperties {
-            public string Text { get; set; }
-            public Color Color { get; set; }
-            public int FontSize { get; set; }
-            public TextAlignmentOptions Alignment { get; set; }
-            public TextProperties() {
-
-            }
-        }
-        public record UIElement {
-            public GameObject ParentObject { get; set; }
-            public GameObject TextObject { get; set; }
-            public Vector3 Offset { get; set; }
-            public bool ShouldDispose { get; set; }
-            public UIElement() {
-            }
-            public void Dispose() {
-                ShouldDispose = true;
-            }
-        }
         [SerializeField]
         private Canvas _worldSpaceCanvas;
         [SerializeField]
@@ -38,7 +19,10 @@ namespace OmniGlyph.UI {
 
         private List<UIElement> _worldUiElements = new List<UIElement>();
 
-        private void Start() {
+        public Color DefaultColor { get { return _defaultColor; } }
+        public Color ActionColor { get { return _actionColor; } }
+
+        private void Awake() {
             if (!(_worldSpaceCanvas == null || _screenSpaceCanvas == null)) {
                 return;
             }
@@ -56,18 +40,9 @@ namespace OmniGlyph.UI {
             Context.GameStateChanged += OnGameStateChange;
         }
 
-        private void OnGameStateChange(GameStates newState) {
-            HideInteractOption();
-        }
-        private bool CanExecute(GameStates requiredState) {
-            return Context.CurrentGameState == requiredState;
-        }
-        private bool CanExecute(GameStates[] requiredStates) {
-            return requiredStates.Contains(Context.CurrentGameState);
-        }
-        private TextMeshProUGUI CreateWorldText(TextProperties props) {
+        public TextMeshProUGUI CreateWorldText(TextProperties props) {
 
-            GameObject txtObj = new GameObject("World_Text");
+            GameObject txtObj = new GameObject(props.Text);
             TextMeshProUGUI text = txtObj.AddComponent<TextMeshProUGUI>();
 
             txtObj.transform.SetParent(_worldSpaceCanvas.transform, true);
@@ -81,41 +56,30 @@ namespace OmniGlyph.UI {
 
             return text;
         }
-        private string ColorizeText(string text, Color color) {
+        public RawImage CreateWorldImage(Texture2D image) {
+            GameObject imgObj = new GameObject(image.name);
+            imgObj.transform.SetParent(_worldSpaceCanvas.transform, true);
+
+            RawImage newImage = imgObj.AddComponent<RawImage>();
+            newImage.texture = image;
+            newImage.rectTransform.localScale = Vector3.one;
+
+            return newImage;
+        }
+        public string ColorizeText(string text, Color color) {
             byte ToByte(float value) {
                 return (byte)(Mathf.Clamp01(value) * 255);
             }
             return $"<color=#{ColorUtility.ToHtmlStringRGBA(color)}>{text}</color>";
         }
-
-        #region Interact
-        private TextMeshProUGUI _interactText;
-        public void ShowInteractOption() {
-            if (!CanExecute(GameStates.Roam)) {
-                HideInteractOption();
-                return;
-            } else if (_interactText != null) {
-                return;
-            }
-            _interactText = CreateWorldText(new TextProperties() {
-                Text = $"Press [{ColorizeText("E", _actionColor)}] to interact",
-                Alignment = TextAlignmentOptions.Center,
-                FontSize = 16,
-                Color = _defaultColor
-            });
-            return;
+        public TextMeshProUGUI ApplyTextProps(TextMeshProUGUI textObject, TextProperties textProps) {
+            textObject.text = textProps.Text;
+            textObject.color = textProps.Color;
+            textObject.fontSize = textProps.FontSize;
+            textObject.alignment = textProps.Alignment;
+            return textObject;
         }
-        public void HideInteractOption() {
-            if (_interactText != null) {
-                Destroy(_interactText.gameObject);
-                _interactText = null;
-            }
-        }
-        #endregion
         private void Update() {
-            if (_interactText != null) {
-                _interactText.gameObject.transform.position = Context.Player.transform.position + Context.Player.Size.y * Vector3.up;
-            }
             for (int i = 0; i < _worldUiElements.Count; i++) {
                 UIElement element = _worldUiElements[i];
                 if (element.ShouldDispose) {
